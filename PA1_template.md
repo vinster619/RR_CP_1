@@ -5,14 +5,11 @@ output:
     keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(ggplot2)
-library(lattice)
-```
+
 
 ## Loading and preprocessing the data
-```{r}
+
+```r
 data <- read.csv(unz("activity.zip", "activity.csv"))
 data <- transform(data, date = as.Date(date))
 ```
@@ -21,13 +18,14 @@ data <- transform(data, date = as.Date(date))
 ## What is mean total number of steps taken per day?
 
 Define `available_data` which excludes missing values:
-```{r}
-available_data <- data[!is.na(data[1]),]
 
+```r
+available_data <- data[!is.na(data[1]),]
 ```
 
 Define a couple of helper functions to ease our calculations later:
-```{r}
+
+```r
 get_steps_per_day <- function(d) {
   steps_per_day <- tapply(d$steps, d$date, sum)
   
@@ -58,39 +56,38 @@ get_steps_per_interval <- function(d) {
 ```
 
 Calculate the total steps taken per day:
-```{r}
+
+```r
 total_steps_per_day_with_available_data <- get_steps_per_day(available_data)
 ```
 
 A histogram of total steps taken per day:
 
-```{r echo=FALSE}
-ggplot(total_steps_per_day_with_available_data, aes(x = day, y = steps)) + geom_bar(stat = 'identity') + ylab("total steps")
-```
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
 Calculate the mean and median of the total steps taken per day:
-```{r}
+
+```r
 mean_avaialble_steps <- mean(total_steps_per_day_with_available_data$steps)
 median_available_steps <- median(total_steps_per_day_with_available_data$steps)
 ```
 
-The mean and median of the total steps taken per day are **`r formatC(mean_avaialble_steps, format="d", big.mark=",")`** and **`r formatC(median_available_steps, format="d", big.mark=",")`**, respectively.
+The mean and median of the total steps taken per day are **10,766** and **10,765**, respectively.
 
 ## What is the average daily activity pattern?
 Calculate the average steps taken per interval:
 
-```{r}
+
+```r
 average_steps_per_interval_with_available_data <- get_steps_per_interval(available_data)
 ```
 
 A plot of the average steps taken per interval:
-```{r echo=FALSE}
-plot(average_steps_per_interval_with_available_data$interval, average_steps_per_interval_with_available_data$steps, type = "l", xlab = "interval", ylab = "average steps")
-
-```
+![](PA1_template_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
 Find the interval that has the maximum average steps:
-```{r}
+
+```r
 is_max <-
   average_steps_per_interval_with_available_data$steps ==
     max(average_steps_per_interval_with_available_data$steps)
@@ -99,19 +96,21 @@ max_per_interval <- average_steps_per_interval_with_available_data[is_max,]
 interval_for_max <- max_per_interval$interval
 ```
 
-The interval with the maximum average steps is **`r interval_for_max`**.
+The interval with the maximum average steps is **835**.
 
 ## Imputing missing values
 
 Calcualte the total number of missing values in the databaset:
-```{r}
+
+```r
 total_missing_values <- sum(is.na(data$steps))
 ```
 
-The total number of missing values is **`r total_missing_values`**.
+The total number of missing values is **2304**.
 
 Fill in the missing values by using the average available steps for a given interval and call it `filled_data`:
-```{r}
+
+```r
 filled_data <- data
 na_indices <- which(is.na(filled_data$steps))
 ave_steps <- average_steps_per_interval_with_available_data # shorten for readability
@@ -122,25 +121,22 @@ for(i in na_indices) {
 ```
 
 A histogram of the total steps per day with the filled in data:
-```{r echo=FALSE}
-total_steps_per_day_with_filled_data <- get_steps_per_day(filled_data)
-ggplot(total_steps_per_day_with_filled_data, aes(x = day, y = steps)) +
-  geom_bar(stat = "identity") +
-  ylab("total steps")
-```
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 Calculate the mean and medial total number of steps taken per day with the filled in data:
-```{r}
+
+```r
 mean_filled_steps <- mean(total_steps_per_day_with_filled_data$steps)
 median_filled_steps <- median(total_steps_per_day_with_filled_data$steps)
 ```
 
-The mean and remdian of the total steps taken per day with filled in data are **`r formatC(mean_filled_steps, format="d", big.mark=",")`** and **`r formatC(median_filled_steps, format="d", big.mark=",")`**, respectively. This compares to **`r formatC(mean_avaialble_steps, format="d", big.mark=",")`** and **`r formatC(median_available_steps, format="d", big.mark=",")`** for data without missing values, which are very close. So we conclude that filling in missing values have no meaningful impact to the calculations
+The mean and remdian of the total steps taken per day with filled in data are **10,766** and **10,766**, respectively. This compares to **10,766** and **10,765** for data without missing values, which are very close. So we conclude that filling in missing values have no meaningful impact to the calculations
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 Add a weekday / weekend factor variable to the filled data to indicate what type of day the steps were taken in:
-```{r}
+
+```r
 weekdays_list <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 filled_data$day_of_week <- weekdays(filled_data$date)
 filled_data$type_of_day <-
@@ -150,15 +146,4 @@ filled_data$type_of_day <-
 ```
 
 A panel plot that compares steps taken during a weekend vs. a weekday:
-```{r echo=FALSE}
-weekday_data <- filled_data[filled_data$type_of_day == "weekday",]
-weekend_data <- filled_data[filled_data$type_of_day == "weekend",]
-
-weekday_steps <- get_steps_per_interval(weekday_data)
-weekend_steps <- get_steps_per_interval(weekend_data)
-
-weekday_steps$type_of_day <- factor(TRUE, levels = c(FALSE, TRUE), labels = c("weekend", "weekday"))
-weekend_steps$type_of_day <- factor(FALSE, levels = c(FALSE, TRUE), labels = c("weekend", "weekday"))
-weekday_weekend_steps <- rbind(weekday_steps, weekend_steps)
-xyplot(steps ~ interval | type_of_day, data = weekday_weekend_steps, layout = c(1,2), type = "l", xlab = "Interval", ylab = "Number of steps")
-```
+![](PA1_template_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
